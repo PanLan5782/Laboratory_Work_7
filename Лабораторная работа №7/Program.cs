@@ -56,25 +56,47 @@ namespace Лабораторная_работа__7
             do
             {
                 Console.WriteLine("1)Сформировать однонаправленный список");
-                Console.WriteLine("2)Удалить из списка первый четный элемент");
-                Console.WriteLine("3)В главное меню");
+                Console.WriteLine("2)Создать список с клавиатуры");
+                Console.WriteLine("3)Удалить из списка первый четный элемент");
+                Console.WriteLine("4)В главное меню");
                 Console.Write(">");
                 userCommand = Console.ReadLine();
 
                 switch (userCommand)
                 {
                     case "1":
-                        GenerateList(rnd.Next(0, 10));
+                        Head = null;
+                        GenerateList(rnd.Next(1, 10));
+                        break;
+                    case "3":
+                        DeleteFirstEvenItem();
                         break;
                     case "2":
-                        DeleteFirstEvenItem();
+                        Head = null;
+                        int size = InputNumber("Введите количество элементов в списке:", x => x > 0);
+                        GenerateListFromKey(size);
+                        break;
+                    case "4":
                         break;
                     default:
                         Console.WriteLine("Неверная команда.");
                         break;
                 }
-            } while (userCommand != "3");
+            } while (userCommand != "4");
         }
+
+        private static void GenerateListFromKey(int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                int data = InputNumber($"Введите элемент {i}:", x => true);
+                ListItem item = new ListItem(data);
+                item.Next = Head;
+                Head = item;
+            }
+            PrintList();
+        }
+
         static void GenerateList(int size)
         {
             for (int i = 0; i < size; i++)
@@ -99,6 +121,7 @@ namespace Лабораторная_работа__7
         {
             ListItem item = Head;
             ListItem prev = Head;
+            bool wasDeleted = false;
             while (item != null)
             {
                 if (item.Data % 2 == 0)
@@ -107,12 +130,18 @@ namespace Лабораторная_работа__7
                         prev.Next = item.Next;
                     else
                         Head = item.Next;
+                    wasDeleted = true;
                     break;
                 }
                 prev = item;
                 item = item.Next;
             }
+
+            if (!wasDeleted)
+                Console.WriteLine("Отсутствие четных элементов");
+
             PrintList();
+            
         }
 
         private static void TwoListItemWorks()
@@ -134,8 +163,11 @@ namespace Лабораторная_работа__7
                         TwoListPrint(twoListHead);
                         break;
                     case "2":
-                        AddItem(twoListHead, 0);
+                        int index = InputNumber("Введите номер элемента:", x=> x>=0);
+                        AddItem(ref twoListHead, index);
                         TwoListPrint(twoListHead);
+                        break;
+                    case "3":
                         break;
                     default:
                         Console.WriteLine("Неверная команда.");
@@ -144,7 +176,25 @@ namespace Лабораторная_работа__7
             } while (userCommand != "3");
         }
 
-        private static void AddItem(TwoListItem head, int number)
+        private static int InputNumber(string prompt, Func<int, bool> condition)
+        {
+            Console.WriteLine(prompt);
+            bool ok = false;
+            int result = 0;
+
+            do
+            {
+                string input = Console.ReadLine();
+                ok = int.TryParse(input, out result) && condition(result);
+                if (!ok)
+                {
+                    Console.WriteLine($"Неверное значение'{input}'. Повторите ввод.");
+                }
+            } while (!ok);
+            return result;
+        }
+
+        private static void AddItem(ref TwoListItem head, int number)
         {
             Random rnd = new Random();
 
@@ -228,8 +278,8 @@ namespace Лабораторная_работа__7
             string userCommand = null;
             do
             {
-                Console.WriteLine("1)Сформировать бинарное дерево");
-                Console.WriteLine("2)Подсчитать количество листьев");
+                Console.WriteLine("1)Сформировать идеально сбалансированное дерево и преобразовать в дерево поиска");
+                Console.WriteLine("2)Найти минимальный элемент дерева");
                 Console.WriteLine("3)В главное меню");
                 Console.Write(">");
                 userCommand = Console.ReadLine();
@@ -237,14 +287,24 @@ namespace Лабораторная_работа__7
                 switch (userCommand)
                 {
                     case "1":
-                        root = GenerateTree(rnd.Next(0, 10));
-                        ShowTree(root, 40, Console.CursorTop);
-                        Console.SetCursorPosition(0, 20);
+                        BinarTreeNode p = null;
+                        BinarTreeNode idealRoot = IdealTree(15, p);
+                        Console.WriteLine("Идеально сбалансированное дерево:");
+                        ShowTree(idealRoot, 50, Console.CursorTop);
+                        Console.SetCursorPosition(0, maxTop + 1);
+                        Console.WriteLine();
+                        root = null;
+                        GenerateSearchTree(idealRoot, ref root);
+                        Console.WriteLine("Дерево поиска:");
+                        ShowTree(root, 50, Console.CursorTop);
+                        Console.SetCursorPosition(0, maxTop + 1);
                         break;
                     case "2":
-                        int count = 0;
-                        CountLeaves(root, ref count);
-                        Console.WriteLine($"Количество листьев:{count}.");
+                        int min = int.MaxValue;
+                        MinimalElement(root, ref min);
+                        Console.WriteLine($"Минимальный элемент:{min}.");
+                        break;
+                    case "3":
                         break;
                     default:
                         Console.WriteLine("Неверная команда.");
@@ -253,31 +313,29 @@ namespace Лабораторная_работа__7
             } while (userCommand != "3");
         }
 
-        private static void CountLeaves(BinarTreeNode p, ref int count)
+        private static void MinimalElement(BinarTreeNode p, ref int min)
         {
             if (p != null)
             {
-                if (p.left == null && p.right == null)
-                    count++;
-
-                CountLeaves(p.left, ref count);//переход к левому поддереву
-                CountLeaves(p.right, ref count);//переход к правому поддереву
+                if (p.Data < min)
+                    min = p.Data;
+                MinimalElement(p.left, ref min);//переход к левому поддереву
+                MinimalElement(p.right, ref min);//переход к правому поддереву
             }
+
         }
 
-        private static BinarTreeNode GenerateTree(int size)
+        private static void GenerateSearchTree(BinarTreeNode idealTreeRoot, ref BinarTreeNode searchTreeRoot)
         {
-            BinarTreeNode p = new BinarTreeNode(rnd.Next(0, 20));
-
-            for (int i = 0; i < size; i++)
+            if (idealTreeRoot != null)
             {
-                Add(p, rnd.Next(0, 20));
+                Add(ref searchTreeRoot, idealTreeRoot.Data);
+                GenerateSearchTree(idealTreeRoot.left, ref searchTreeRoot);//переход к левому поддереву
+                GenerateSearchTree(idealTreeRoot.right, ref searchTreeRoot);//переход к правому поддереву
             }
-
-            return p;
         }
 
-        static BinarTreeNode Add(BinarTreeNode root, int d)//добавление элемента d в дерево поиска
+        static BinarTreeNode Add(ref BinarTreeNode root, int d)//добавление элемента d в дерево поиска
         {
             BinarTreeNode p = root; //корень дерева
             BinarTreeNode r = null;
@@ -287,18 +345,24 @@ namespace Лабораторная_работа__7
             {
                 r = p;
                 //элемент уже существует
-                if (d == p.Data) ok = true;
+                if (d == p.Data)
+                    ok = true;
                 else
-            if (d < p.Data) p = p.left; //пойти в левое поддерево
-                else p = p.right; //пойти в правое поддерево
+                    if (d < p.Data) p = p.left; //пойти в левое поддерево
+                        else p = p.right; //пойти в правое поддерево
             }
             if (ok) return p;//найдено, не добавляем
                              //создаем узел
             BinarTreeNode NewPoint = new BinarTreeNode(d);//выделили память
-                                                          // если d<r.key, то добавляем его в левое поддерево
-            if (d < r.Data) r.left = NewPoint;
-            // если d>r.key, то добавляем его в правое поддерево
-            else r.right = NewPoint;
+            if (r != null)
+                // если d<r.key, то добавляем его в левое поддерево
+                if (d < r.Data)
+                    r.left = NewPoint;
+                // если d>r.key, то добавляем его в правое поддерево
+                else
+                    r.right = NewPoint;
+            else
+                root = NewPoint;
             return NewPoint;
         }
 
@@ -309,42 +373,53 @@ namespace Лабораторная_работа__7
             if (size == 0) { p = null; return p; }
             nl = size / 2;
             nr = size - nl - 1;
-            int number = Convert.ToInt32(Console.ReadLine());
+            int number = rnd.Next(0, 20);
             r = new BinarTreeNode();
             r.Data = number;
-           // i++;
+            // i++;
             r.left = IdealTree(nl, r.left);
             r.right = IdealTree(nr, r.right);
             return r;
         }
 
-        static void ShowTree(BinarTreeNode p, int l, int t)
+        static int maxTop = 0;
+
+        /// <summary>
+        /// Печать Дерева (идеальное/поиска)
+        /// </summary>
+        /// <param name="node">Текущая вершина дерева</param>
+        /// <param name="left">Отступ от левого края</param>
+        /// <param name="top">Отступ Сверху</param>
+        /// <param name="offset">Длина ветки ("Смещение")</param>
+        static void ShowTree(BinarTreeNode node, int left, int top, int offset = 20) 
         {
-            const int offset = 3;
-            if (p != null)
+            if (node != null)
             {
-                Console.SetCursorPosition(l, t);
-                Console.Write(p.Data);
+                Console.SetCursorPosition(left, top);
+                Console.Write(node.Data);
 
-                if (p.left != null)
+                if (node.left != null)
                 {
-                    Console.SetCursorPosition(l - offset, t);
+                    Console.SetCursorPosition(left - offset, top);
                     Console.Write(DupLicate("━", offset));
 
-                    Console.SetCursorPosition(l - offset, t);
+                    Console.SetCursorPosition(left - offset, top);
                     Console.Write("┏");
-                    ShowTree(p.left, l - offset, t + 1);//переход к левому поддереву
+                    ShowTree(node.left, left - offset, top + 1, offset / 2);//переход к левому поддереву
                 }
 
-                if (p.right != null)
+                if (node.right != null)
                 {
-                    Console.SetCursorPosition(l+ p.Data.ToString().Length, t);
+                    Console.SetCursorPosition(left + node.Data.ToString().Length, top);
                     Console.Write(DupLicate("━", offset));
 
-                    Console.SetCursorPosition(l + offset+p.Data.ToString().Length-1, t);
+                    Console.SetCursorPosition(left + offset + node.Data.ToString().Length - 1, top);
                     Console.Write("┓");
-                    ShowTree(p.right, l + offset, t + 1);//переход к правому поддереву
+                    ShowTree(node.right, left + offset, top + 1, offset / 2);//переход к правому поддереву
                 }
+
+                if (top > maxTop)
+                    maxTop = top;
             }
         }
 
